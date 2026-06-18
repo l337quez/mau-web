@@ -8,7 +8,7 @@ export const MainLayout = ({ children }: { children: React.ReactNode }) => {
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0">
         <Topbar />
-        <main className="flex-1 overflow-auto bg-slate-50 dark:bg-[#0b0f19] p-8">
+        <main className="flex-1 overflow-auto bg-slate-50 dark:bg-background p-8">
           {children}
         </main>
       </div>

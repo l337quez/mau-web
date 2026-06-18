@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useProject } from '../../context/ProjectContext';
 import { 
   DndContext, 
   DragOverlay,
@@ -33,7 +34,7 @@ export type Column = {
 };
 
 const initialColumns: Column[] = [
-  { id: 'todo', title: 'To Do' },
+  { id: 'draft', title: 'Draft' },
   { id: 'inprogress', title: 'In Progress' },
   { id: 'review', title: 'Review' },
   { id: 'done', title: 'Done' },
@@ -46,7 +47,7 @@ const initialTasks: Task[] = [
     tags: [{ label: 'Design', color: 'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400' }],
     dueDate: '24 Jun',
     assignee: { initials: 'JS', bgColor: 'bg-blue-200 text-blue-700' },
-    columnId: 'todo',
+    columnId: 'draft',
   },
   {
     id: 't2',
@@ -54,7 +55,7 @@ const initialTasks: Task[] = [
     tags: [{ label: 'Design', color: 'bg-pink-100 text-pink-600 dark:bg-pink-900/30 dark:text-pink-400' }],
     dueDate: '26 Jun',
     assignee: { initials: 'AM', bgColor: 'bg-green-200 text-green-700' },
-    columnId: 'todo',
+    columnId: 'draft',
   },
   {
     id: 't3',
@@ -86,6 +87,40 @@ export const BoardView = () => {
   const [columns] = useState<Column[]>(initialColumns);
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const { currentProject } = useProject();
+
+  useEffect(() => {
+    if (!currentProject) return;
+    
+    // Asume que el backend corre en el puerto 9000 (o ajusta según tu configuración)
+    const backendUrl = `http://localhost:9000/api/projects/${currentProject.id}/todos`;
+
+    const fetchTodos = async () => {
+      try {
+        const response = await fetch(backendUrl);
+        if (response.ok) {
+          const data = await response.json();
+          // Mapeamos los TODOs de la API a nuestras Tasks del tablero
+          const apiTasks: Task[] = data.map((todo: any) => ({
+            id: todo.id,
+            title: todo.title,
+            columnId: todo.status === 'draft' || !todo.status ? 'draft' : todo.status, 
+            tags: [{ label: 'API', color: 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' }],
+          }));
+          
+          if (apiTasks.length > 0) {
+             setTasks(apiTasks);
+          }
+        } else {
+          console.error("Error al obtener los TODOs:", response.status);
+        }
+      } catch (error) {
+        console.error("No se pudo conectar al backend:", error);
+      }
+    };
+
+    fetchTodos();
+  }, [currentProject]);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
